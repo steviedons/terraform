@@ -4,9 +4,10 @@ provider "aws" {
 
 resource "aws_instance" "example" {
     # This is the Ubuntu ami
-	ami 	      = "ami-996372fd"
-	instance_type = "t2.nano"
+		ami   	      = "ami-996372fd"
+		instance_type = "t2.nano"
     key_name      = "steve-titan"
+		vpc_security_group_ids = ["${aws_security_group.instance.id}"]
     user_data     = <<-EOF
                     #!/bin/bash
                     echo "Hello, World" > index.html
@@ -27,7 +28,6 @@ resource "aws_security_group" "instance" {
         cidr_blocks = [ "0.0.0.0/0" ]
     }
 }
-
 
 resource "aws_key_pair" "steve-titan" {
   key_name   = "steve-titan"
