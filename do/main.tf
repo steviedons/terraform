@@ -15,10 +15,19 @@ resource "digitalocean_droplet" "test" {
       timeout = "2m"
   }
 
-  provisioner "remote-exec" {
-    inline = [
-      "export PATH=$PATH:/usr/bin",
-      "sudo yum -y update"
-    ]
+#  provisioner "remote-exec" {
+#    inline = [
+#      "export PATH=$PATH:/usr/bin",
+#      "sudo yum -y update"
+#    ]
+#  }
+#     command = "sleep 30 && echo -e \"[webserver]\n${digitalocean_droplet.web.ipv4_address} ansible_connection=ssh ansible_ssh_user=root\" > inventory &&  ansible-playbook -i inventory oc-playbook.yml"
+# Can this use EOF
+  provisioner "local-exec" {
+  command = <<EOF
+            sleep 30
+            echo "[webserver]\n${digitalocean_droplet.test.ipv4_address} ansible_connection=ssh ansible_ssh_user=root" > inventory
+            ansible-playbook -i inventory /home/steve/ansible/playbook.yml
+            EOF
   }
 }

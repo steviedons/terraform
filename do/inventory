@@ -1,0 +1,2 @@
+[webserver]
+138.68.167.45 ansible_connection=ssh ansible_ssh_user=root
