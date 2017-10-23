@@ -1,8 +1,29 @@
+# The s3 bucket configuration does not match the book and was taken from
+# the documentation https://www.terraform.io/docs/backends/types/s3.html
+# a terraform init was needed to initalize the bucket.
+
+terraform {
+  backend "s3" {
+    bucket = "steviedons-terraform-up-and-running-state"
+    key    = "network/terraform.tfstate"
+    region = "eu-west-2"
+  }
+}
+
 provider "aws" {
 	region = "eu-west-2"
 }
 
 data "aws_availability_zones" "available" {}
+
+data "terraform_remote_state" "network" {
+  backend = "s3"
+  config {
+    bucket = "steviedons-terraform-up-and-running-state"
+    key    = "network/terraform.tfstate"
+    region = "eu-west-2"
+  }
+}
 
 variable "server_port" {
 	description = "The port the server will listen on"
