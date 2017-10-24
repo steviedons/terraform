@@ -21,11 +21,13 @@ data "terraform_remote_state" "stage" {
   }
 }
 
+# TODO - This causes an error when its deleted - DB Instance FinalSnapshotIdentifier is required when a final snapshot is required
 resource "aws_db_instance" "example" {
-  engine            = "mysql"
-  allocated_storage = 10
-  instance_class    = "db.t2.micro"
-  name              = "example_database"
-  username          = "admin"
-  password          = "${var.db_password}"
+  engine              = "mysql"
+  allocated_storage   = 10
+  instance_class      = "db.t2.micro"
+  name                = "example_database"
+  username            = "admin"
+  password            = "${var.db_password}"
+  skip_final_snapshot =  true
 }

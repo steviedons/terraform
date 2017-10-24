@@ -25,14 +25,24 @@ data "terraform_remote_state" "stage" {
   }
 }
 
-variable "server_port" {
-	description = "The port the server will listen on"
-	default = 8080
+data "terraform_remote_state" "db" {
+	backend = "s3"
+
+	config {
+    bucket = "steviedons-terraform-up-and-running-state"
+    key    = "stage/data-stores/terraform.tfstate"
+    region = "eu-west-2"
+  }
 }
 
-variable "elb_port" {
-	description = "The port the elb will listen on"
-	default = 80
+data "template_file" "user_data" {
+	template = "${file("user-data.sh")}"
+
+	vars {
+		server_port = "${var.server_port}"
+		db_address	=	"${data.terraform_remote_state.db.address}"
+		db_port			= "${data.terraform_remote_state.db.port}"
+	}
 }
 
 resource "aws_launch_configuration" "example" {
@@ -41,16 +51,19 @@ resource "aws_launch_configuration" "example" {
 	image_id   	      			= "ami-996372fd"
 	instance_type 					= "t2.nano"
 	security_groups 				= ["${aws_security_group.instance.id}"]
-  user_data     					= <<-EOF
-                    				#!/bin/bash
-                    				echo "Hello, World" > index.html
-                    				nohup busybox httpd -f -p "${var.server_port}" &
-                    				EOF
+	key_name 								= "deployer-key"
+	user_data 							= "${data.template_file.user_data.rendered}"
 
 	lifecycle {
 		create_before_destroy = true
 	}
 }
+
+resource "aws_key_pair" "deployer" {
+  key_name   = "deployer-key"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC//pH6SLKzy5iWlzbpX1yMY6AkkiJrRtCLVynzKK9ksalFL9akH/RlgeSHz3X+C2tPel2XnrUAY4Pl4yX38Ogzh5cIJxkrxXS5eA03+hZ5Q6gHzg4JVH7omftQgFkhW5wrFFn9mnMkmmI3Ix++LmYYNMgHwiphikWYQfHBwUUN7w4vCVpjJFIoL+P4wmOday5ymxJAc3e20HnmB760ODAblPT1SM8T5y+wZg762DFp7Tnba0unW7wdfkc2lL9vT/YyivnnL3gU8MfD6JyCP8GZhfcCGyD+7rNG9ZGIhbYLuEyuOhkE4dkpOTSnKpSlWpnQkrpBsh6pZePTQOnM5nzt steve@pixel"
+}
+
 
 resource "aws_security_group" "instance" {
 	name = "terraform-example-instance"
@@ -60,6 +73,13 @@ resource "aws_security_group" "instance" {
 		to_port 			= "${var.server_port}"
   	protocol 			= "tcp"
     cidr_blocks 	= [ "0.0.0.0/0" ]
+  }
+
+	ingress {
+		from_port 		= 22
+		to_port 			= 22
+  	protocol 			= "tcp"
+    cidr_blocks 	= [ "212.159.22.24/32" ]
   }
 
 	lifecycle {
@@ -121,13 +141,4 @@ resource "aws_elb" "example" {
 	  target 							= "HTTP:${var.server_port}/"
 	  interval 						= 30
 	}
-}
-
-resource "aws_key_pair" "steve-titan" {
-  key_name   = "steve-titan"
-  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC/3ZU3FLKqkK+lNO/Uzuzvnexc6CDSYaEC5U+ndSVAJW8UuxWZSVY34MwrSagSex7EW3M/uBI+twXIB/pqER/OjtUkrw8AV8SbX2EU1SAGquMUw6njUK51loDd5T42xuavdKR9tn8yfW8mmDmKZe/ZyXPhlKkcZ5xvwqjdi0JWp9VP58FV64Iq+rb805icUuLqVI0L/EaeVNgbM7EXZdXVBom+sKXnvh8OE1STa11v8o/NHGf3/BRFQpqEe1ESgqQ936onWpD8e44brJjW9l8ZXhPDqMnVCu7kHQLhvF3kbSWTjr+OlabUKM5ZgfVrXxJmGaUpu18nca3Kk/XQoX03 steve@titan"
-}
-
-output "elb_dns_name" {
-	value = "${aws_elb.example.dns_name}"
 }
