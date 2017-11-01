@@ -1,32 +1,14 @@
 # The s3 bucket configuration does not match the book and was taken from
 # the documentation https://www.terraform.io/docs/backends/types/s3.html
 # a terraform init was needed to initalize the bucket.
-
-terraform {
-  backend "s3" {
-    bucket = "steviedons-terraform-up-and-running-state"
-    key    = "stage/services/webserver-cluster/terraform.tfstate"
-    region = "eu-west-2"
-  }
-}
-
 data "aws_availability_zones" "available" {}
-
-data "terraform_remote_state" "stage" {
-  backend = "s3"
-  config {
-    bucket = "steviedons-terraform-up-and-running-state"
-    key    = "stage/services/webserver-cluster/terraform.tfstate"
-    region = "eu-west-2"
-  }
-}
 
 data "terraform_remote_state" "db" {
 	backend = "s3"
 
 	config {
-    bucket = "steviedons-terraform-up-and-running-state"
-    key    = "stage/data-stores/terraform.tfstate"
+    bucket = "${var.db_remote_state_bucket}"
+    key    = "${var.db_remote_state_key}"
     region = "eu-west-2"
   }
 }
@@ -36,8 +18,8 @@ data "template_file" "user_data" {
 
 	vars {
 		server_port = "${var.server_port}"
-		db_address	=	"${data.terraform_remote_state.db.address}"
-		db_port			= "${data.terraform_remote_state.db.port}"
+		db_address	=	"test"  #"${data.terraform_remote_state.db.address}"
+		db_port			= "1234"  # ${data.terraform_remote_state.db.port}"
 	}
 }
 
@@ -62,7 +44,7 @@ resource "aws_key_pair" "deployer" {
 
 
 resource "aws_security_group" "instance" {
-	name = "terraform-example-instance"
+	name = "${var.cluster_name}-instance"
 
   ingress {
 		from_port 		= "${var.server_port}"
@@ -84,7 +66,7 @@ resource "aws_security_group" "instance" {
 }
 
 resource "aws_security_group" "elb" {
-	name = "terraform-example-elb"
+	name = "${var.cluster_name}-elb"
 
 	ingress {
 		from_port 		= "${var.elb_port}"
@@ -119,7 +101,7 @@ resource "aws_autoscaling_group" "example" {
 }
 
 resource "aws_elb" "example" {
-	name 								= "terraform-asg-example"
+	name 								= "${var.cluster_name}-example"
 	availability_zones 	= ["${data.aws_availability_zones.available.names}"]
 	security_groups 		= ["${aws_security_group.elb.id}"]
 

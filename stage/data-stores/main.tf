@@ -10,23 +10,10 @@ provider "aws" {
 	region = "eu-west-2"
 }
 
-data "aws_availability_zones" "available" {}
+module "data-stores" {
+  source = "../../modules/data-stores"
 
-data "terraform_remote_state" "stage" {
-  backend = "s3"
-  config {
-    bucket = "steviedons-terraform-up-and-running-state"
-    key    = "stage/data-stores/terraform.tfstate"
-    region = "eu-west-2"
-  }
-}
-
-resource "aws_db_instance" "example" {
-  engine              = "mysql"
-  allocated_storage   = 10
-  instance_class      = "db.t2.micro"
-  name                = "example_database"
-  username            = "admin"
-  password            = "${var.db_password}"
-  skip_final_snapshot =  true
+  db_remote_state_bucket  ="steviedons-terraform-up-and-running-state"
+  db_remote_state_key     ="stage/data-stores/terraform.tfstate"
+	db_password 						="password123"
 }
