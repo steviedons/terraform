@@ -1,16 +1,6 @@
 
 data "aws_availability_zones" "available" {}
 
-data "terraform_remote_state" "db" {
-	backend = "s3"
-
-	config {
-    bucket = "${var.db_remote_state_bucket}"
-    key    = "${var.db_remote_state_key}"
-    region = "eu-west-2"
-  }
-}
-
 resource "aws_db_instance" "example" {
   engine              = "mysql"
   allocated_storage   = 5
