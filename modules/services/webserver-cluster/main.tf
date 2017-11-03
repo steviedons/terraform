@@ -27,7 +27,7 @@ resource "aws_launch_configuration" "example" {
     # This is the Ubuntu ami
 	name_prefix   					= "terraform-lc-example-"
 	image_id   	      			= "ami-996372fd"
-	instance_type 					= "t2.nano"
+	instance_type 					= "${var.instance_type}"
 	security_groups 				= ["${aws_security_group.instance.id}"]
 	key_name 								= "deployer-key"
 	user_data 							= "${data.template_file.user_data.rendered}"
@@ -90,12 +90,12 @@ resource "aws_autoscaling_group" "example" {
 	load_balancers 		=	["${aws_elb.example.name}"]
 	health_check_type = "ELB"
 
-	min_size = 2
-	max_size = 10
+	min_size = "${var.min_size}"
+	max_size = "${var.max_size}"
 
 	tag {
 		key 							  = "Name"
-		value 						  = "terraform-asg-example"
+		value 						  = "${var.cluster_name}"
 		propagate_at_launch = true
 	}
 }
